@@ -54,9 +54,6 @@ exprType =
 int :: Parser Expr
 int = Int <$> integer
 
-floating :: Parser Expr
-floating = Float <$> float
-
 variable :: Parser Expr
 variable = Var <$> identifier
 
@@ -111,31 +108,15 @@ ifelse = do
     code <- codeBlock
     return code
   return $ If cond tr (fromMaybe [] fl)
-
-while :: Parser Expr
-while = do
-  reserved "while"
-  cond <- parens expr
-  body <- codeBlock
-  return $ While cond body
-
-cast :: Parser Expr
-cast = do
-  castedT <- parens exprType
-  e <- expr
-  return $ TypeCast castedT e
  
 factor :: Parser Expr
-factor = try cast
-      <|> try block
+factor = try block
       <|> try function
-      <|> try floating
       <|> try int
       <|> try call
       <|> try definition
       <|> try variable
       <|> try ifelse
-      <|> try while
       <|> parens expr
 
 contents :: Parser a -> Parser a

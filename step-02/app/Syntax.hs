@@ -19,8 +19,8 @@ data ExprType
   | FloatType
   | BytesType
   | BooleanType
-  | CallableType [ExprType] ExprType
-  | AutoType
+  | CallableType [ExprType] ExprType  -- [типы аргументов] тип возвращемого значения
+  | AutoType  -- тип должен быть выведен автоматически
   deriving (Eq, Ord)
 
 instance Show ExprType where
@@ -37,17 +37,14 @@ instance Show ExprType where
   show AutoType = "auto"
 
 data Expr
-  = Int Integer
-  | Float Double
-  | Var Name
-  | Def ExprType Name
-  | Block (CodeBlock Expr)
-  | Call String [Expr]
-  | Function ExprType Name [Expr] (Maybe Name) (CodeBlock Expr)
-  | BinaryOp String Expr Expr
-  | If Expr (CodeBlock Expr) (CodeBlock Expr)
-  | While Expr (CodeBlock Expr)
-  | TypeCast ExprType Expr
+  = Int Integer  -- значение типа Integer
+  | Var Name  -- обращение к переменной
+  | Def ExprType Name  -- объявление переменной
+  | Block (CodeBlock Expr)  -- блок кода
+  | Call String [Expr]  -- вызов функции с указанными аргументами
+  | Function ExprType Name [Expr] (Maybe Name) (CodeBlock Expr)  -- объявление функции (разберем подробно далее)
+  | BinaryOp String Expr Expr  -- бинарная операция над двумя выражениями
+  | If Expr (CodeBlock Expr) (CodeBlock Expr)  -- if - условие и две ветки исполнения
   deriving (Eq, Ord, Show)
 
 type AST = [Expr]
@@ -76,9 +73,7 @@ smartJoin strs = if sum (map length strs) < 40
 
 instance Pretty Expr where
   prettify expr = case expr of
-    (TypeCast type_ e) -> joinOrSplit ["(" ++ show type_ ++ ")"] e
     (Int i) -> [joinS ["Int", show i]]
-    (Float f) -> [joinS ["Float", show f]]
     (Var n) -> [joinS ["Var", show n]]
     (Def t n) -> [joinS ["Def", show t, show n]]
     (Block es) -> smartJoin ("Block {" : prettify es ++ ["}"])
@@ -88,4 +83,3 @@ instance Pretty Expr where
         : prettify body ++ ["}"]
     (BinaryOp op e1 e2) -> joinOrSplit (joinOrSplit ["BinaryOp " ++ op] e1) e2
     (If eq bl1 bl2) -> addToLast (joinOrSplit ["If"] eq) " {" ++ prettify bl1 ++ ["}", "else {"] ++ prettify bl2 ++ ["}"]
-    (While eq bl) -> addToLast (joinOrSplit ["While"] eq) " {" ++ prettify bl ++ ["}"]
