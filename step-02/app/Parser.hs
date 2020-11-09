@@ -11,17 +11,14 @@ import qualified Text.Parsec.Token as Tok
 import Lexer
 import Syntax
 
-binop = Ex.Infix (BinaryOp <$> op) Ex.AssocLeft
-unop = Ex.Prefix (UnaryOp <$> op)
-
-binary s assoc = Ex.Infix (reservedOp s >> return (BinaryOp s)) assoc
-
 op :: Parser String
 op = do
   whitespace
   o <- operator
   whitespace
   return o
+
+binary s assoc = Ex.Infix (reservedOp s >> return (BinaryOp s)) assoc
 
 opList arity = opList'
   where 
@@ -36,9 +33,8 @@ binops = [
  , binList ["<", "=", "<=", ">=", "==", "!="]
  ]
 
--- TODO: Unary ops
 expr :: Parser Expr
-expr =  Ex.buildExpressionParser (binops ++ [[binop]]) factor
+expr =  Ex.buildExpressionParser binops factor
 
 exprType :: Parser ExprType
 exprType =
@@ -80,20 +76,8 @@ codeBlock = braces $ many $
 block :: Parser Expr
 block = Block <$> codeBlock
 
-decorator :: Parser Modifier
-decorator = do
-  char '@'
-  Decorator <$> identifier
-
-modifiers :: Parser [Modifier]
-modifiers = do
-  decs <- many decorator
-  -- TODO: in future here we can add parsing of some other modifiers
-  return decs
-
 function :: Parser Expr
 function = do
-  mods <- modifiers
   funcType <- exprType
   name <- identifier
   args <- parens $ commaSep definition
@@ -109,19 +93,7 @@ function = do
       Nothing -> do
         e <- expr
         return [e]
-  return $ Function mods funcType name args mReturns body
-
-decoratorDef :: Parser Expr
-decoratorDef = do
-  char '@'
-  funcType <- exprType
-  name <- identifier
-  reserved "="
-  body <- codeBlock
-  return $ DecoratorDef funcType name body
-
-decoratorTarget :: Parser Expr
-decoratorTarget = reserved "@target" >> return DecoratorTarget
+  return $ Function funcType name args mReturns body
 
 call :: Parser Expr
 call = do
@@ -161,7 +133,6 @@ factor = try cast
       <|> try int
       <|> try call
       <|> try definition
-      <|> try decoratorTarget
       <|> try variable
       <|> try ifelse
       <|> try while
@@ -176,8 +147,7 @@ contents p = do
 
 toplevel :: Parser [Expr]
 toplevel = many $ do
-    def <- try function
-       <|> try decoratorDef
+    def <- function
     reservedOp ";"
     return def
 

@@ -36,26 +36,18 @@ instance Show ExprType where
         from' -> joinC (map show from')
   show AutoType = "auto"
 
-data Modifier
-  = Decorator Name
-  -- TODO
-  deriving (Eq, Ord, Show)
-
 data Expr
-  = TypeCast ExprType Expr
-  | Int Integer
+  = Int Integer
   | Float Double
   | Var Name
   | Def ExprType Name
-  | DecoratorTarget
-  | DecoratorDef ExprType Name (CodeBlock Expr)
   | Block (CodeBlock Expr)
   | Call String [Expr]
-  | Function [Modifier] ExprType Name [Expr] (Maybe Name) (CodeBlock Expr)
+  | Function ExprType Name [Expr] (Maybe Name) (CodeBlock Expr)
   | BinaryOp String Expr Expr
-  | UnaryOp String Expr
   | If Expr (CodeBlock Expr) (CodeBlock Expr)
   | While Expr (CodeBlock Expr)
+  | TypeCast ExprType Expr
   deriving (Eq, Ord, Show)
 
 type AST = [Expr]
@@ -91,12 +83,9 @@ instance Pretty Expr where
     (Def t n) -> [joinS ["Def", show t, show n]]
     (Block es) -> smartJoin ("Block {" : prettify es ++ ["}"])
     (Call f es) -> smartJoin (joinS ["Call", show f, "("] : prettify es ++ [")"])
-    (Function m t n a r body) ->
-        joinS ["Function", show n, show t, "; args", show a, "; modifiers", show m, "; returns", show r, "{"]
+    (Function t n a r body) ->
+        joinS ["Function", show n, show t, "; args", show a, "; returns", show r, "{"]
         : prettify body ++ ["}"]
     (BinaryOp op e1 e2) -> joinOrSplit (joinOrSplit ["BinaryOp " ++ op] e1) e2
-    (UnaryOp op e) -> joinOrSplit ["UnaryOp " ++ op] e
     (If eq bl1 bl2) -> addToLast (joinOrSplit ["If"] eq) " {" ++ prettify bl1 ++ ["}", "else {"] ++ prettify bl2 ++ ["}"]
     (While eq bl) -> addToLast (joinOrSplit ["While"] eq) " {" ++ prettify bl ++ ["}"]
-    (DecoratorDef t n body) -> joinS ["Decorator", show n, show t, "{"] : prettify body ++ ["}"]
-    _ -> [show expr]  -- TODO: decorators

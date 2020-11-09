@@ -1,11 +1,3 @@
-### User
-# dev notes
-notes.txt
-# programm for testing
-main.grt
-# emitted LLVM IR for debug
-main.ir
-
 ### Editors
 .idea/
 .vscode/
