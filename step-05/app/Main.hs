@@ -1,19 +1,24 @@
 module Main where
 
 import Data.List (intersect)
+import qualified Data.Text.Lazy.IO as TLIO
 
 import System.IO
 import System.Environment
+
+import LLVM.Pretty (ppllvm)
 
 import Parser (parseCode)
 import Syntax (joinedPrettyAST)
 import AST.Processor (processAST)
 import AST.Utils (ppAST)
 import AST.Errors (showE)
+import Codegen.Builder (buildIR)
 
 import StringUtils
 
 debugFlag = ["--debug", "-d"]
+emitFlag = ["--emit", "-e"]
 
 parseArgs :: [String] -> ([String], String) -- [flags], filename
 parseArgs (reverse -> (filename:args)) = (args, filename) -- TODO: parse incoming arguments
@@ -31,7 +36,10 @@ main = do
             let maybeTAST = processAST ast
             case maybeTAST of
               Right errors -> putStrLn $ joinN (map showE errors)
-              Left tast -> ppAST tast
+              Left tast -> do
+                actionFor debugFlag (ppAST tast >> putStrLn "")
+                let ir = buildIR tast
+                actionFor emitFlag (TLIO.putStrLn $ ppllvm ir)
       return ()
       where
         (flags, filename) = parseArgs args
