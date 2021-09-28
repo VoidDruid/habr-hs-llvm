@@ -7,6 +7,7 @@ import System.IO
 import System.Environment
 
 import LLVM.Pretty (ppllvm)
+import LLVM.Module
 
 import Parser (parseCode)
 import Syntax (joinedPrettyAST)
@@ -14,6 +15,7 @@ import AST.Processor (processAST)
 import AST.Utils (ppAST)
 import AST.Errors (showE)
 import Codegen.Builder (buildIR)
+import Compiler (writeObject)
 
 import StringUtils
 
@@ -40,6 +42,7 @@ main = do
                 actionFor debugFlag (ppAST tast >> putStrLn "")
                 let ir = buildIR tast
                 actionFor emitFlag (TLIO.putStrLn $ ppllvm ir)
+                writeObject (File ("output.o" :: FilePath)) ir
       return ()
       where
         (flags, filename) = parseArgs args

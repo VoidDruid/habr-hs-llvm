@@ -10,7 +10,7 @@ executable habrhs-exe
   main-is: Main.hs
   other-modules:
       Paths_habrhs
-    , JIT
+    , Compiler
     , Lexer
     , Syntax
     , Parser
